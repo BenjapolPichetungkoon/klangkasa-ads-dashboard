@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facebook Ads Dashboard — คลังคาซ่า</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridjs@5.0.2/dist/gridjs.umd.js" integrity="sha384-/XXDzxe4FsGiAe50i/u9pY/Vy/uX654MHB1xoc1BJNnH1WXHhqHga9g3q5tF4gj7" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs@5.0.2/dist/theme/mermaid.min.css" integrity="sha384-jZvDSsmGB9oGGT/4l9bHXGoAv1OxvG/cFmSo0dZaSqmBgvQTKDBFAMftlXTmMbNW" crossorigin="anonymous">
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Sarabun", Tahoma, sans-serif;
+    background: #f7f7f5;
+    color: #1a1a1a;
+    padding: 24px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  header { margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: #6b6b6b; font-size: 13px; }
+  .updated { color: #8a8a8a; font-size: 12px; margin-top: 4px; }
+  .range-bar { margin: 0 0 16px; padding: 12px 16px; }
+  .range-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .preset-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .preset-btn {
+    font-size: 12.5px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #d8d8d4;
+    background: #fff;
+    color: #444;
+    cursor: pointer;
+  }
+  .preset-btn:hover { background: #f2f2ef; }
+  .preset-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .preset-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .custom-range { display: flex; gap: 12px; font-size: 12.5px; color: #555; align-items: center; }
+  .custom-range input[type="date"] {
+    border: 1px solid #d8d8d4;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12.5px;
+    font-family: inherit;
+  }
+  .range-hint { margin-top: 8px; font-size: 11.5px; color: #9a9a9a; }
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .kpi-card {
+    background: #fff;
+    border: 1px solid #e5e5e2;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .kpi-label { font-size: 12px; color: #7a7a7a; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 700; color: #1a1a1a; }
+  .kpi-sub { font-size: 11px; color: #9a9a9a; margin-top: 4px; }
+  .panels {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e5e2;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .card h2 { font-size: 14px; margin: 0 0 12px; color: #333; }
+  .static-note { font-weight: 400; font-size: 11px; color: #b0a06a; }
+  .chart-box { position: relative; height: 260px; }
+  table.ads-list { width: 100%; }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .badge.active { background: #e6f4ea; color: #1e7e34; }
+  .badge.paused { background: #fdecea; color: #b3261e; }
+  .page-tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #eef2ff;
+    color: #3949ab;
+  }
+  .notes {
+    background: #fff8e6;
+    border: 1px solid #f0dfa1;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 16px;
+    font-size: 12.5px;
+    color: #5c4a1a;
+    line-height: 1.7;
+  }
+  .notes h2 { font-size: 13px; margin: 0 0 8px; color: #5c4a1a; }
+  .notes ul { margin: 0; padding-left: 18px; }
+  #ads-grid .gridjs-wrapper { border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Facebook Ads Performance — คลังคาซ่า จำกัด</h1>
+    <div class="sub" id="range-label"></div>
+    <div class="updated" id="updated-label"></div>
+  </header>
+
+  <div class="range-bar card" id="range-bar">
+    <div class="range-row">
+      <div class="preset-group" id="preset-group"></div>
+      <div class="custom-range">
+        <label>ตั้งแต่ <input type="date" id="date-from"></label>
+        <label>ถึง <input type="date" id="date-to"></label>
+      </div>
+    </div>
+    <div class="range-hint" id="range-hint"></div>
+  </div>
+
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <div class="panels">
+    <div class="card">
+      <h2>แนวโน้มค่าแอดรายวัน (Spend & Clicks)</h2>
+      <div class="chart-box"><canvas id="dailyChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>สัดส่วนค่าแอดตามแพลตฟอร์ม <span class="static-note">— ค่าคงที่ 7 วันล่าสุด</span></h2>
+      <div class="chart-box"><canvas id="platformChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>รายละเอียดโฆษณา (7 วันล่าสุด) <span class="static-note">— ค่าคงที่ ไม่ผูกกับช่วงเวลาด้านบน</span></h2>
+    <div id="ads-grid"></div>
+  </div>
+
+  <div class="notes">
+    <h2>หมายเหตุข้อมูล</h2>
+    <ul id="notes-list"></ul>
+  </div>
+</div>
+
+<script>
+// ---- ห้ามลบ marker บรรทัดถัดไป — rebuild_dashboard.cjs จะแทนที่ด้วยข้อมูลจริง ----
+const DATA = {"account":{"name":"Klangcasa Korat","currency":"THB","pages":[{"pageId":"140690036084284","pageName":"City Link Condo"},{"pageId":"103959311373799","pageName":"Mayfair Market"}]},"dateRange":{"since":"2026-08-08","until":"2026-08-15"},"summary7d":{"spend":3701.1,"impressions":43386,"reach":25433,"clicks":666,"cpc":5.56,"cpm":85.31,"ctr":1.54,"messagesStarted":22,"leads":1},"monthSummary":{"spend":3907.25,"impressions":49140,"reach":28730,"clicks":725,"cpc":5.38,"ctr":1.48},"daily":[{"date":"2026-08-08","spend":420.5,"impressions":4820,"reach":3110,"clicks":68,"cpc":6.18,"cpm":87.24,"ctr":1.41,"messages":2},{"date":"2026-08-09","spend":450,"impressions":5210,"reach":3340,"clicks":74,"cpc":6.08,"cpm":86.37,"ctr":1.42,"messages":3},{"date":"2026-08-10","spend":485.3,"impressions":5690,"reach":3610,"clicks":89,"cpc":5.45,"cpm":85.29,"ctr":1.56,"messages":3},{"date":"2026-08-11","spend":512.8,"impressions":6120,"reach":3890,"clicks":95,"cpc":5.39,"cpm":83.79,"ctr":1.55,"messages":4},{"date":"2026-08-12","spend":620.4,"impressions":7450,"reach":4480,"clicks":132,"cpc":4.7,"cpm":83.27,"ctr":1.77,"messages":5},{"date":"2026-08-13","spend":580.1,"impressions":6890,"reach":3950,"clicks":108,"cpc":5.37,"cpm":84.19,"ctr":1.57,"messages":3},{"date":"2026-08-14","spend":442.76,"impressions":4134,"reach":3177,"clicks":75,"cpc":5.9,"cpm":107.1,"ctr":1.81,"messages":2},{"date":"2026-08-15","spend":189.24,"impressions":3072,"reach":2380,"clicks":45,"cpc":4.2,"cpm":61.6,"ctr":1.46,"messages":1}],"ads":[{"id":"120253780761060440","name":"จองคอนโดเดือนสิงหาฯ นี้ (Hampton City Link)","page":"City Link Condo","status":"ACTIVE","createdTime":"2026-08-13","spend":632,"impressions":7206,"reach":5557,"clicks":120,"cpc":5.26,"cpm":87.7,"ctr":1.66,"messages":3,"reactions":15,"linkClicks":38},{"id":"120253705894100440","name":"วันแม่ปีนี้ - Aerobic Dance Boxing Mayfair Market","page":"Mayfair Market","status":"CAMPAIGN_PAUSED","createdTime":"2026-08-11","spend":51.68,"impressions":1224,"reach":1033,"clicks":120,"cpc":0.43,"cpm":42.22,"ctr":9.8,"messages":1,"reactions":55,"linkClicks":10},{"id":"120253558768250440","name":"จองคอนโดเดือนสิงหาฯ นี้ (แคมเปญหลัก)","page":"City Link Condo","status":"ACTIVE","createdTime":"2026-08-04","spend":2828.18,"impressions":34956,"reach":20843,"clicks":426,"cpc":6.63,"cpm":80.9,"ctr":1.22,"messages":18,"reactions":35,"linkClicks":186},{"id":"120251833529850440","name":"แอโรบิคเมย์แฟร์มาเก็ต","page":"Mayfair Market","status":"ACTIVE","createdTime":"2026-06-23","spend":189.24,"impressions":3072,"reach":2380,"clicks":45,"cpc":4.2,"cpm":61.6,"ctr":1.46,"messages":0,"reactions":20,"linkClicks":0}],"platforms":[{"platform":"Facebook (mobile)","spend":3480.5,"impressions":40800,"reach":23900,"clicks":628},{"platform":"Instagram (mobile)","spend":150.6,"impressions":1850,"reach":1120,"clicks":26},{"platform":"Messenger (mobile)","spend":70,"impressions":736,"reach":413,"clicks":12}],"lastUpdated":"2026-08-15T09:30:00.000Z","dataNotes":["นี่คือข้อมูลตัวอย่าง (sample_data.json) สำหรับทดสอบ rebuild_dashboard.cjs — เมื่อรัน daily_refresh.cjs จริงแล้ว ให้ใช้ ads_dashboard_source.json แทน","ค่า Reach ระดับโฆษณารายตัวไม่สามารถนำมารวมกันเป็น Reach ต่อเพจได้ตรงๆ เนื่องจากมีการซ้อนทับของกลุ่มเป้าหมาย (audience overlap)"]};
+
+function fmtBaht(n) { return "฿" + Number(n).toLocaleString("th-TH", {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+function fmtNum(n) { return Number(n).toLocaleString("th-TH"); }
+function toISO(d) { return d.toISOString().slice(0, 10); }
+
+document.getElementById("updated-label").textContent = "อัปเดตล่าสุด: " + new Date(DATA.lastUpdated).toLocaleString("th-TH", {dateStyle: "medium", timeStyle: "short"});
+
+// ---- Date range picker over DATA.daily ----
+const allDates = DATA.daily.map(d => d.date).sort();
+const minDate = allDates[0];
+const maxDate = allDates[allDates.length - 1];
+const spanDays = Math.round((new Date(maxDate) - new Date(minDate)) / 86400000) + 1;
+
+const presets = [
+  { key: "7d", label: "7 วันล่าสุด", days: 7 },
+  { key: "14d", label: "14 วันล่าสุด", days: 14 },
+  { key: "30d", label: "30 วันล่าสุด", days: 30 },
+  { key: "90d", label: "90 วันล่าสุด", days: 90 },
+  { key: "all", label: "ทั้งหมดที่มีข้อมูล", days: null }
+];
+
+const presetGroup = document.getElementById("preset-group");
+presetGroup.innerHTML = presets.map(p => {
+  const disabled = p.days !== null && p.days > spanDays && p.key !== "all";
+  return `<button class="preset-btn" data-key="${p.key}" ${disabled ? "disabled title='ยังไม่มีข้อมูลย้อนหลังถึง " + p.days + " วัน'" : ""}>${p.label}</button>`;
+}).join("");
+
+const fromInput = document.getElementById("date-from");
+const toInput = document.getElementById("date-to");
+fromInput.min = minDate; fromInput.max = maxDate;
+toInput.min = minDate; toInput.max = maxDate;
+
+let dailyChartInstance = null;
+let platformChartInstance = null;
+
+function applyRange(since, until) {
+  [...presetGroup.querySelectorAll(".preset-btn")].forEach(b => b.classList.remove("active"));
+  fromInput.value = since;
+  toInput.value = until;
+
+  const rows = DATA.daily.filter(d => d.date >= since && d.date <= until);
+  const spend = rows.reduce((s, d) => s + d.spend, 0);
+  const impressions = rows.reduce((s, d) => s + d.impressions, 0);
+  const reachSum = rows.reduce((s, d) => s + d.reach, 0);
+  const clicks = rows.reduce((s, d) => s + d.clicks, 0);
+  const messages = rows.reduce((s, d) => s + (d.messages || 0), 0);
+  const cpc = clicks > 0 ? spend / clicks : 0;
+  const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
+  const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+  const isFullSummaryRange = since === DATA.dateRange.since && until === DATA.dateRange.until;
+
+  document.getElementById("range-label").textContent =
+    `ช่วงที่เลือก: ${new Date(since).toLocaleDateString("th-TH",{day:"numeric",month:"short"})} - ${new Date(until).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})} (${rows.length} วัน) · บัญชี ${DATA.account.name}`;
+  document.getElementById("range-hint").textContent =
+    `มีข้อมูลรายวันตั้งแต่ ${minDate} ถึง ${maxDate} (${spanDays} วัน) — เลือกช่วงนอกเหนือจากนี้ไม่ได้จนกว่าจะรัน daily_refresh.cjs ใหม่`;
+
+  const kpis = [
+    { label: "ค่าแอดรวม", value: fmtBaht(spend), sub: isFullSummaryRange ? "" : "" },
+    { label: "Impressions", value: fmtNum(impressions), sub: "CPM " + fmtBaht(cpm) },
+    { label: "Reach (รวมรายวัน)", value: fmtNum(reachSum), sub: "ค่าประมาณ ไม่ใช่ unique reach ที่แท้จริง" },
+    { label: "Clicks", value: fmtNum(clicks), sub: "CPC " + fmtBaht(cpc) },
+    { label: "CTR", value: ctr.toFixed(2) + "%", sub: "" },
+    { label: "เริ่มทักแชท (Messages)", value: fmtNum(messages), sub: "" },
+    { label: "Leads (7 วันล่าสุด)", value: fmtNum(DATA.summary7d.leads), sub: "ไม่มีข้อมูลรายวัน จึงกรองตามช่วงไม่ได้" },
+    { label: "จำนวนโฆษณาที่แอคทีฟ", value: DATA.ads.filter(a => a.status === "ACTIVE").length + " / " + DATA.ads.length, sub: "ค่าคงที่ 7 วันล่าสุด" }
+  ];
+  document.getElementById("kpi-grid").innerHTML = kpis.map(k =>
+    `<div class="kpi-card"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div>${k.sub ? `<div class="kpi-sub">${k.sub}</div>` : ""}</div>`
+  ).join("");
+
+  if (dailyChartInstance) dailyChartInstance.destroy();
+  dailyChartInstance = new Chart(document.getElementById("dailyChart"), {
+    type: "line",
+    data: {
+      labels: rows.map(d => new Date(d.date).toLocaleDateString("th-TH", {day:"numeric", month:"short"})),
+      datasets: [
+        {
+          label: "ค่าแอด (฿)",
+          data: rows.map(d => d.spend),
+          borderColor: "#c0392b",
+          backgroundColor: "rgba(192,57,43,0.08)",
+          yAxisID: "y",
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: "Clicks",
+          data: rows.map(d => d.clicks),
+          borderColor: "#2c6fbb",
+          backgroundColor: "rgba(44,111,187,0.08)",
+          yAxisID: "y1",
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        y: { position: "left", title: { display: true, text: "฿" } },
+        y1: { position: "right", title: { display: true, text: "Clicks" }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+}
+
+presetGroup.addEventListener("click", (e) => {
+  const btn = e.target.closest(".preset-btn");
+  if (!btn || btn.disabled) return;
+  [...presetGroup.querySelectorAll(".preset-btn")].forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  const preset = presets.find(p => p.key === btn.dataset.key);
+  let since;
+  if (preset.key === "all") {
+    since = minDate;
+  } else {
+    const untilD = new Date(maxDate);
+    const sinceD = new Date(untilD);
+    sinceD.setDate(sinceD.getDate() - (preset.days - 1));
+    since = toISO(sinceD) < minDate ? minDate : toISO(sinceD);
+  }
+  applyRange(since, maxDate);
+});
+
+[fromInput, toInput].forEach(inp => inp.addEventListener("change", () => {
+  if (!fromInput.value || !toInput.value) return;
+  if (fromInput.value > toInput.value) return;
+  applyRange(fromInput.value, toInput.value);
+}));
+
+// default view: full available range
+applyRange(minDate, maxDate);
+presetGroup.querySelector('[data-key="all"]').classList.add("active");
+
+platformChartInstance = new Chart(document.getElementById("platformChart"), {
+  type: "doughnut",
+  data: {
+    labels: DATA.platforms.map(p => p.platform),
+    datasets: [{
+      data: DATA.platforms.map(p => p.spend),
+      backgroundColor: ["#c0392b", "#2c6fbb", "#7a8c3a", "#c9a227", "#7a5cc9"]
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } }
+  }
+});
+
+new gridjs.Grid({
+  columns: [
+    { name: "โฆษณา", id: "name" },
+    { name: "เพจ", id: "page", formatter: (cell) => gridjs.html(`<span class="page-tag">${cell}</span>`) },
+    { name: "สถานะ", id: "status", formatter: (cell) => gridjs.html(`<span class="badge ${cell === "ACTIVE" ? "active" : "paused"}">${cell === "ACTIVE" ? "Active" : "Paused"}</span>`) },
+    { name: "ค่าแอด", id: "spend", formatter: (cell) => fmtBaht(cell) },
+    { name: "Impressions", id: "impressions", formatter: (cell) => fmtNum(cell) },
+    { name: "Reach", id: "reach", formatter: (cell) => fmtNum(cell) },
+    { name: "Clicks", id: "clicks", formatter: (cell) => fmtNum(cell) },
+    { name: "CPC", id: "cpc", formatter: (cell) => fmtBaht(cell) },
+    { name: "CTR", id: "ctr", formatter: (cell) => cell.toFixed(2) + "%" },
+    { name: "แชท", id: "messages", formatter: (cell) => fmtNum(cell) }
+  ],
+  data: DATA.ads.map(a => [a.name, a.page, a.status, a.spend, a.impressions, a.reach, a.clicks, a.cpc, a.ctr, a.messages]),
+  sort: true,
+  search: true,
+  pagination: { limit: 10 }
+}).render(document.getElementById("ads-grid"));
+
+document.getElementById("notes-list").innerHTML = (DATA.dataNotes || []).map(n => `<li>${n}</li>`).join("");
+</script>
+</body>
+</html>

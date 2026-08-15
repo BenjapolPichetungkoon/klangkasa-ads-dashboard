@@ -107,6 +107,36 @@
   .notes h2 { font-size: 13px; margin: 0 0 8px; color: #5c4a1a; }
   .notes ul { margin: 0; padding-left: 18px; }
   #ads-grid .gridjs-wrapper { border-radius: 8px; }
+
+  /* เปรียบเทียบรายเพจ */
+  .pages-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .page-card { background: #fff; border: 1px solid #e5e5e2; border-radius: 10px; padding: 16px; }
+  .page-card .page-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .page-card h3 { font-size: 14px; margin: 0; color: #333; }
+  .page-card .page-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .page-card .page-stat { font-size: 12px; color: #7a7a7a; }
+  .page-card .page-stat b { display: block; font-size: 16px; color: #1a1a1a; font-weight: 700; margin-top: 2px; }
+
+  /* เป้าหมายธุรกิจ + โฆษณาเด่น */
+  .goal-spotlight-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .goal-spotlight-row.single { grid-template-columns: 1fr; }
+  .target-item { margin-bottom: 14px; }
+  .target-item:last-child { margin-bottom: 0; }
+  .target-label { font-size: 12.5px; color: #444; display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .target-label .target-date { color: #9a9a9a; font-size: 11px; }
+  .target-bar-track { background: #eee; border-radius: 999px; height: 10px; overflow: hidden; }
+  .target-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2c6fbb, #7a8c3a); }
+  .target-bar-fill.over { background: #c0392b; }
+  .target-value { font-size: 11.5px; color: #7a7a7a; margin-top: 4px; }
+
+  .spotlight-body { display: flex; gap: 14px; }
+  .spotlight-img { width: 96px; height: 96px; border-radius: 10px; object-fit: cover; background: #f0f0ee; flex-shrink: 0; }
+  .spotlight-img.placeholder { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #b0b0ac; text-align: center; padding: 6px; }
+  .spotlight-info { flex: 1; min-width: 0; }
+  .spotlight-title { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+  .spotlight-copy { font-size: 12px; color: #666; line-height: 1.5; max-height: 54px; overflow: hidden; margin-bottom: 8px; }
+  .spotlight-stats { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11.5px; color: #7a7a7a; }
+  .spotlight-stats b { color: #1a1a1a; }
 </style>
 </head>
 <body>
@@ -129,6 +159,19 @@
   </div>
 
   <div class="kpi-grid" id="kpi-grid"></div>
+
+  <div class="pages-row" id="pages-row" style="display:none;"></div>
+
+  <div class="goal-spotlight-row" id="goal-spotlight-row" style="display:none;">
+    <div class="card" id="targets-card">
+      <h2>ความคืบหน้าเทียบเป้าหมายธุรกิจ <span class="static-note">— จาก business_targets.json</span></h2>
+      <div id="targets-list"></div>
+    </div>
+    <div class="card" id="spotlight-card">
+      <h2>โฆษณาเด่นประจำสัปดาห์ <span class="static-note">— งบสูงสุดในกลุ่ม Active</span></h2>
+      <div id="spotlight-body"></div>
+    </div>
+  </div>
 
   <div class="panels">
     <div class="card">
@@ -154,7 +197,7 @@
 
 <script>
 // ---- ห้ามลบ marker บรรทัดถัดไป — rebuild_dashboard.cjs จะแทนที่ด้วยข้อมูลจริง ----
-const DATA = {"account":{"name":"Klangcasa Korat","currency":"THB","pages":[{"pageId":"140690036084284","pageName":"City Link Condo"},{"pageId":"103959311373799","pageName":"Mayfair Market"}]},"dateRange":{"since":"2026-08-08","until":"2026-08-15"},"summary7d":{"spend":3701.1,"impressions":43386,"reach":25433,"clicks":666,"cpc":5.56,"cpm":85.31,"ctr":1.54,"messagesStarted":22,"leads":1},"monthSummary":{"spend":3907.25,"impressions":49140,"reach":28730,"clicks":725,"cpc":5.38,"ctr":1.48},"daily":[{"date":"2026-08-08","spend":420.5,"impressions":4820,"reach":3110,"clicks":68,"cpc":6.18,"cpm":87.24,"ctr":1.41,"messages":2},{"date":"2026-08-09","spend":450,"impressions":5210,"reach":3340,"clicks":74,"cpc":6.08,"cpm":86.37,"ctr":1.42,"messages":3},{"date":"2026-08-10","spend":485.3,"impressions":5690,"reach":3610,"clicks":89,"cpc":5.45,"cpm":85.29,"ctr":1.56,"messages":3},{"date":"2026-08-11","spend":512.8,"impressions":6120,"reach":3890,"clicks":95,"cpc":5.39,"cpm":83.79,"ctr":1.55,"messages":4},{"date":"2026-08-12","spend":620.4,"impressions":7450,"reach":4480,"clicks":132,"cpc":4.7,"cpm":83.27,"ctr":1.77,"messages":5},{"date":"2026-08-13","spend":580.1,"impressions":6890,"reach":3950,"clicks":108,"cpc":5.37,"cpm":84.19,"ctr":1.57,"messages":3},{"date":"2026-08-14","spend":442.76,"impressions":4134,"reach":3177,"clicks":75,"cpc":5.9,"cpm":107.1,"ctr":1.81,"messages":2},{"date":"2026-08-15","spend":189.24,"impressions":3072,"reach":2380,"clicks":45,"cpc":4.2,"cpm":61.6,"ctr":1.46,"messages":1}],"ads":[{"id":"120253780761060440","name":"จองคอนโดเดือนสิงหาฯ นี้ (Hampton City Link)","page":"City Link Condo","status":"ACTIVE","createdTime":"2026-08-13","spend":632,"impressions":7206,"reach":5557,"clicks":120,"cpc":5.26,"cpm":87.7,"ctr":1.66,"messages":3,"reactions":15,"linkClicks":38},{"id":"120253705894100440","name":"วันแม่ปีนี้ - Aerobic Dance Boxing Mayfair Market","page":"Mayfair Market","status":"CAMPAIGN_PAUSED","createdTime":"2026-08-11","spend":51.68,"impressions":1224,"reach":1033,"clicks":120,"cpc":0.43,"cpm":42.22,"ctr":9.8,"messages":1,"reactions":55,"linkClicks":10},{"id":"120253558768250440","name":"จองคอนโดเดือนสิงหาฯ นี้ (แคมเปญหลัก)","page":"City Link Condo","status":"ACTIVE","createdTime":"2026-08-04","spend":2828.18,"impressions":34956,"reach":20843,"clicks":426,"cpc":6.63,"cpm":80.9,"ctr":1.22,"messages":18,"reactions":35,"linkClicks":186},{"id":"120251833529850440","name":"แอโรบิคเมย์แฟร์มาเก็ต","page":"Mayfair Market","status":"ACTIVE","createdTime":"2026-06-23","spend":189.24,"impressions":3072,"reach":2380,"clicks":45,"cpc":4.2,"cpm":61.6,"ctr":1.46,"messages":0,"reactions":20,"linkClicks":0}],"platforms":[{"platform":"Facebook (mobile)","spend":3480.5,"impressions":40800,"reach":23900,"clicks":628},{"platform":"Instagram (mobile)","spend":150.6,"impressions":1850,"reach":1120,"clicks":26},{"platform":"Messenger (mobile)","spend":70,"impressions":736,"reach":413,"clicks":12}],"lastUpdated":"2026-08-15T09:30:00.000Z","dataNotes":["นี่คือข้อมูลตัวอย่าง (sample_data.json) สำหรับทดสอบ rebuild_dashboard.cjs — เมื่อรัน daily_refresh.cjs จริงแล้ว ให้ใช้ ads_dashboard_source.json แทน","ค่า Reach ระดับโฆษณารายตัวไม่สามารถนำมารวมกันเป็น Reach ต่อเพจได้ตรงๆ เนื่องจากมีการซ้อนทับของกลุ่มเป้าหมาย (audience overlap)"]};
+const DATA = {"account":{"name":"Klangcasa Korat","currency":"THB","pages":[{"pageId":"140690036084284","pageName":"City Link Condo"},{"pageId":"103959311373799","pageName":"Mayfair Market"}]},"dateRange":{"since":"2026-08-08","until":"2026-08-15"},"summary7d":{"spend":3701.1,"impressions":43386,"reach":25433,"clicks":666,"cpc":5.56,"cpm":85.31,"ctr":1.54,"messagesStarted":22,"leads":1,"postEngagement":384,"pageEngagement":386,"costPerMessage":168.23,"costPerLead":3701.1},"monthSummary":{"spend":3907.25,"impressions":49140,"reach":28730,"clicks":725,"cpc":5.38,"ctr":1.48},"daily":[{"date":"2026-08-08","spend":420.5,"impressions":4820,"reach":3110,"clicks":68,"cpc":6.18,"cpm":87.24,"ctr":1.41,"messages":2,"leads":0},{"date":"2026-08-09","spend":450,"impressions":5210,"reach":3340,"clicks":74,"cpc":6.08,"cpm":86.37,"ctr":1.42,"messages":3,"leads":0},{"date":"2026-08-10","spend":485.3,"impressions":5690,"reach":3610,"clicks":89,"cpc":5.45,"cpm":85.29,"ctr":1.56,"messages":3,"leads":0},{"date":"2026-08-11","spend":512.8,"impressions":6120,"reach":3890,"clicks":95,"cpc":5.39,"cpm":83.79,"ctr":1.55,"messages":4,"leads":0},{"date":"2026-08-12","spend":620.4,"impressions":7450,"reach":4480,"clicks":132,"cpc":4.7,"cpm":83.27,"ctr":1.77,"messages":5,"leads":1},{"date":"2026-08-13","spend":580.1,"impressions":6890,"reach":3950,"clicks":108,"cpc":5.37,"cpm":84.19,"ctr":1.57,"messages":3,"leads":0},{"date":"2026-08-14","spend":442.76,"impressions":4134,"reach":3177,"clicks":75,"cpc":5.9,"cpm":107.1,"ctr":1.81,"messages":2,"leads":0},{"date":"2026-08-15","spend":189.24,"impressions":3072,"reach":2380,"clicks":45,"cpc":4.2,"cpm":61.6,"ctr":1.46,"messages":1,"leads":0}],"ads":[{"id":"120253780761060440","name":"จองคอนโดเดือนสิงหาฯ นี้ (Hampton City Link)","pageId":"140690036084284","page":"City Link Condo","status":"ACTIVE","createdTime":"2026-08-13","spend":632,"impressions":7206,"reach":5557,"clicks":120,"cpc":5.26,"cpm":87.7,"ctr":1.66,"messages":3,"reactions":15,"linkClicks":38,"creative":{"title":"แพ็กเกจเที่ยวอังกฤษ 120,000 บาท*","body":"จองคอนโดเดือนสิงหาฯ นี้... รับเลย! แพ็กเกจเที่ยวอังกฤษ ดินแดนในฝันของผู้ดีอังกฤษ มูลค่ารวมกว่า 120,000 บาท* มอบของขวัญล้ำค่าให้คุณแม่และตัวคุณเอง เพียงจองคอนโด Hampton Citylink Condo ใจกลางเมืองโคราช ใกล้ รร.นานาชาติ Anglo Singapore เดินไม่ถึง 100 เมตร","imageUrl":""}},{"id":"120253705894100440","name":"วันแม่ปีนี้ - Aerobic Dance Boxing Mayfair Market","pageId":"103959311373799","page":"Mayfair Market","status":"CAMPAIGN_PAUSED","createdTime":"2026-08-11","spend":51.68,"impressions":1224,"reach":1033,"clicks":120,"cpc":0.43,"cpm":42.22,"ctr":9.8,"messages":1,"reactions":55,"linkClicks":10,"creative":{"title":"Aerobic Dance Boxing Mayfair Market","body":"วันแม่ปีนี้ ชวนคุณแม่มาออกกำลังกายเพื่อสุขภาพที่ดีไปกับแอโรบิคเมย์แฟร์มาเก็ตโคราช พบกับจังหวะการออกกำลังกายแบบ Boxing งานนี้เต้นฟรี!","imageUrl":""}},{"id":"120253558768250440","name":"จองคอนโดเดือนสิงหาฯ นี้ (แคมเปญหลัก)","pageId":"140690036084284","page":"City Link Condo","status":"ACTIVE","createdTime":"2026-08-04","spend":2828.18,"impressions":34956,"reach":20843,"clicks":426,"cpc":6.63,"cpm":80.9,"ctr":1.22,"messages":18,"reactions":35,"linkClicks":186,"creative":{"title":"Hampton City Link คอนโดใหม่","body":"จองคอนโดเดือนสิงหาฯ นี้... รับเลย! แพ็กเกจเที่ยวอังกฤษ มูลค่ารวมกว่า 120,000 บาท*","imageUrl":""}},{"id":"120251833529850440","name":"แอโรบิคเมย์แฟร์มาเก็ต","pageId":"103959311373799","page":"Mayfair Market","status":"ACTIVE","createdTime":"2026-06-23","spend":189.24,"impressions":3072,"reach":2380,"clicks":45,"cpc":4.2,"cpm":61.6,"ctr":1.46,"messages":0,"reactions":20,"linkClicks":0,"creative":{"title":"Aerobic Dance Mayfair Market","body":"แอโรบิคเมย์แฟร์มาเก็ต เริ่ม 18.30 น. พบกับ Coach Kevin และการออกกำลังกายสุดมันส์!","imageUrl":""}}],"pagesSummary7d":[{"pageId":"140690036084284","pageName":"City Link Condo","adsCount":2,"spend":3460.18,"impressions":42162,"reachSum":26400,"clicks":546,"messages":21,"cpc":6.34,"ctr":1.3},{"pageId":"103959311373799","pageName":"Mayfair Market","adsCount":2,"spend":240.92,"impressions":4296,"reachSum":3413,"clicks":165,"messages":1,"cpc":1.46,"ctr":3.84}],"platforms":[{"platform":"Facebook (mobile)","spend":3480.5,"impressions":40800,"reach":23900,"clicks":628},{"platform":"Instagram (mobile)","spend":150.6,"impressions":1850,"reach":1120,"clicks":26},{"platform":"Messenger (mobile)","spend":70,"impressions":736,"reach":413,"clicks":12}],"lastUpdated":"2026-08-15T09:30:00.000Z","dataNotes":["นี่คือข้อมูลตัวอย่าง (sample_data.json) สำหรับทดสอบ rebuild_dashboard.cjs — เมื่อรัน daily_refresh.cjs จริงแล้ว ให้ใช้ ads_dashboard_source.json แทน","ค่า Reach ระดับโฆษณารายตัว/รายเพจไม่สามารถนำมารวมกันตรงๆ ได้ เนื่องจากมีการซ้อนทับของกลุ่มเป้าหมาย (audience overlap) — ตัวเลข reach รวมในหน้านี้จึงเป็นค่าประมาณ ไม่ใช่ unique reach ที่แท้จริง","สรุปรายเพจ (pagesSummary7d) เป็นภาพรวม 7 วันล่าสุดเท่านั้น ยังไม่มี trend รายวันแยกเพจ","เป้าหมายธุรกิจ (targets) มาจากไฟล์ business_targets.json แก้ไขตัวเลขได้เองโดยไม่ต้องแก้โค้ด"],"targets":{"_comment":"เป้าหมายธุรกิจ/การตลาด อ้างอิงจาก 03_Cross_Marketing_Synergy_and_Strategy_2026.md — ไฟล์นี้แก้ตัวเลขเองได้ตรงๆ ไม่ต้องแตะโค้ด รันแล้ว rebuild_dashboard.cjs จะดึงมารวมกับข้อมูลจริงอัตโนมัติ (ถ้าไม่มีไฟล์นี้ dashboard จะไม่แสดงส่วนเป้าหมาย)","updated":"2026-08-15","mayfairFollowers":{"label":"ผู้ติดตามเพจ Mayfair Market","current":36038,"target":50000,"targetDate":"สิ้นปี 2569"},"weeklyReach":{"label":"Reach เฉลี่ยต่อสัปดาห์ (ทั้งบัญชี)","target":40000,"targetDate":"สิ้นปี 2569"},"costPerLead":{"label":"Cost per Lead (เป้าหมายหลัง Retargeting ข้ามเพจ)","target":100,"targetDate":"สิ้นปี 2569"}}};
 
 function fmtBaht(n) { return "฿" + Number(n).toLocaleString("th-TH", {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 function fmtNum(n) { return Number(n).toLocaleString("th-TH"); }
@@ -201,6 +244,8 @@ function applyRange(since, until) {
   const reachSum = rows.reduce((s, d) => s + d.reach, 0);
   const clicks = rows.reduce((s, d) => s + d.clicks, 0);
   const messages = rows.reduce((s, d) => s + (d.messages || 0), 0);
+  const leadsInRange = rows.reduce((s, d) => s + (d.leads || 0), 0);
+  const hasDailyLeads = rows.some(d => typeof d.leads === "number");
   const cpc = clicks > 0 ? spend / clicks : 0;
   const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
   const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
@@ -217,8 +262,10 @@ function applyRange(since, until) {
     { label: "Reach (รวมรายวัน)", value: fmtNum(reachSum), sub: "ค่าประมาณ ไม่ใช่ unique reach ที่แท้จริง" },
     { label: "Clicks", value: fmtNum(clicks), sub: "CPC " + fmtBaht(cpc) },
     { label: "CTR", value: ctr.toFixed(2) + "%", sub: "" },
-    { label: "เริ่มทักแชท (Messages)", value: fmtNum(messages), sub: "" },
-    { label: "Leads (7 วันล่าสุด)", value: fmtNum(DATA.summary7d.leads), sub: "ไม่มีข้อมูลรายวัน จึงกรองตามช่วงไม่ได้" },
+    { label: "เริ่มทักแชท (Messages)", value: fmtNum(messages), sub: "CPC ต่อแชท " + fmtBaht(messages > 0 ? spend / messages : 0) },
+    hasDailyLeads
+      ? { label: "Leads", value: fmtNum(leadsInRange), sub: "ตามช่วงเวลาที่เลือก" }
+      : { label: "Leads (7 วันล่าสุด)", value: fmtNum(DATA.summary7d.leads), sub: "ไม่มีข้อมูลรายวัน จึงกรองตามช่วงไม่ได้" },
     { label: "จำนวนโฆษณาที่แอคทีฟ", value: DATA.ads.filter(a => a.status === "ACTIVE").length + " / " + DATA.ads.length, sub: "ค่าคงที่ 7 วันล่าสุด" }
   ];
   document.getElementById("kpi-grid").innerHTML = kpis.map(k =>
@@ -326,6 +373,93 @@ new gridjs.Grid({
 }).render(document.getElementById("ads-grid"));
 
 document.getElementById("notes-list").innerHTML = (DATA.dataNotes || []).map(n => `<li>${n}</li>`).join("");
+
+// ---- เปรียบเทียบรายเพจ (City Link Condo vs Mayfair Market) — ภาพรวม 7 วันล่าสุด ----
+if (DATA.pagesSummary7d && DATA.pagesSummary7d.length > 0) {
+  const pagesRow = document.getElementById("pages-row");
+  pagesRow.style.display = "grid";
+  pagesRow.innerHTML = DATA.pagesSummary7d.map(p => `
+    <div class="page-card">
+      <div class="page-card-head">
+        <h3>${p.pageName}</h3>
+        <span class="page-tag">${p.adsCount} โฆษณา</span>
+      </div>
+      <div class="page-stat-grid">
+        <div class="page-stat">ค่าแอด<b>${fmtBaht(p.spend)}</b></div>
+        <div class="page-stat">Reach (รวม)<b>${fmtNum(p.reachSum)}</b></div>
+        <div class="page-stat">Clicks<b>${fmtNum(p.clicks)}</b></div>
+        <div class="page-stat">CPC<b>${fmtBaht(p.cpc)}</b></div>
+        <div class="page-stat">CTR<b>${p.ctr.toFixed(2)}%</b></div>
+        <div class="page-stat">แชท<b>${fmtNum(p.messages)}</b></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ---- ความคืบหน้าเทียบเป้าหมายธุรกิจ (จาก business_targets.json ถ้ามี) + โฆษณาเด่น ----
+document.getElementById("goal-spotlight-row").style.display = "grid";
+if (DATA.targets) {
+  const t = DATA.targets;
+  const items = [];
+  if (t.mayfairFollowers) {
+    const cur = t.mayfairFollowers.current || 0;
+    const tgt = t.mayfairFollowers.target || 0;
+    items.push({ label: t.mayfairFollowers.label, dateLabel: t.mayfairFollowers.targetDate, cur, tgt, fmt: fmtNum, higherIsBetter: true });
+  }
+  if (t.weeklyReach) {
+    const cur = DATA.summary7d.reach || 0;
+    const tgt = t.weeklyReach.target || 0;
+    items.push({ label: t.weeklyReach.label, dateLabel: t.weeklyReach.targetDate, cur, tgt, fmt: fmtNum, higherIsBetter: true });
+  }
+  if (t.costPerLead) {
+    const cur = DATA.summary7d.costPerLead || 0;
+    const tgt = t.costPerLead.target || 0;
+    items.push({ label: t.costPerLead.label, dateLabel: t.costPerLead.targetDate, cur, tgt, fmt: fmtBaht, higherIsBetter: false });
+  }
+  document.getElementById("targets-list").innerHTML = items.map(it => {
+    // higherIsBetter=false (เช่น cost per lead) แปลว่ายิ่งต่ำยิ่งดี — วัดความคืบหน้าแบบกลับด้าน
+    const pct = it.higherIsBetter
+      ? Math.min(100, it.tgt > 0 ? (it.cur / it.tgt) * 100 : 0)
+      : Math.min(100, it.cur > 0 ? (it.tgt / it.cur) * 100 : 0);
+    const over = !it.higherIsBetter && it.cur > it.tgt;
+    return `
+      <div class="target-item">
+        <div class="target-label"><span>${it.label}</span><span class="target-date">${it.dateLabel || ""}</span></div>
+        <div class="target-bar-track"><div class="target-bar-fill${over ? " over" : ""}" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="target-value">ปัจจุบัน ${it.fmt(it.cur)} · เป้าหมาย ${it.fmt(it.tgt)} (${pct.toFixed(0)}%)</div>
+      </div>
+    `;
+  }).join("");
+} else {
+  document.getElementById("targets-card").style.display = "none";
+  document.getElementById("goal-spotlight-row").classList.add("single");
+}
+
+// ---- โฆษณาเด่นประจำสัปดาห์ (Active + ใช้งบสูงสุด) ----
+if (DATA.ads && DATA.ads.length > 0) {
+  const activeAds = DATA.ads.filter(a => a.status === "ACTIVE");
+  const topAd = (activeAds.length > 0 ? activeAds : DATA.ads).slice().sort((a, b) => b.spend - a.spend)[0];
+  const creative = topAd.creative || {};
+  const imgHtml = creative.imageUrl
+    ? `<img class="spotlight-img" src="${creative.imageUrl}" alt="">`
+    : `<div class="spotlight-img placeholder">ไม่มีรูปตัวอย่าง<br>(ต้องเพิ่มสิทธิ์ ads_read เพื่อดึงรูปจริง)</div>`;
+  document.getElementById("spotlight-body").innerHTML = `
+    <div class="spotlight-body">
+      ${imgHtml}
+      <div class="spotlight-info">
+        <div class="spotlight-title">${creative.title || topAd.name}</div>
+        <div class="spotlight-copy">${creative.body || "(ไม่มีข้อความโฆษณา)"}</div>
+        <div class="spotlight-stats">
+          <span>เพจ <b>${topAd.page}</b></span>
+          <span>ค่าแอด <b>${fmtBaht(topAd.spend)}</b></span>
+          <span>Reach <b>${fmtNum(topAd.reach)}</b></span>
+          <span>แชท <b>${fmtNum(topAd.messages)}</b></span>
+          <span>CTR <b>${topAd.ctr.toFixed(2)}%</b></span>
+        </div>
+      </div>
+    </div>
+  `;
+}
 </script>
 </body>
 </html>

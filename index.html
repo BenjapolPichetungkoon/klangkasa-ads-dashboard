@@ -239,10 +239,9 @@ pageSwitchGroup.addEventListener("click", (e) => {
   selectedPage = btn.dataset.page;
   [...pageSwitchGroup.querySelectorAll(".page-btn")].forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  applyRange(currentSince, currentUntil);
+  applyRange(currentSince, currentUntil); // เรียก renderPagesRow() ให้อัตโนมัติในตัว
   renderPlatformChart();
   renderAdsGrid();
-  renderPagesRow();
   renderSpotlight();
 });
 
@@ -351,6 +350,8 @@ function applyRange(since, until) {
       }
     }
   });
+
+  renderPagesRow();
 }
 
 presetGroup.addEventListener("click", (e) => {
@@ -431,32 +432,51 @@ renderAdsGrid();
 
 document.getElementById("notes-list").innerHTML = (DATA.dataNotes || []).map(n => `<li>${n}</li>`).join("");
 
-// ---- เปรียบเทียบรายเพจ (City Link Condo vs Mayfair Market) — ภาพรวม 7 วันล่าสุด ----
+// ---- เปรียบเทียบรายเพจ (City Link Condo vs Mayfair Market) — ตามช่วงเวลาที่เลือกด้านบน ----
 // เมื่อเลือกดูเพจใดเพจหนึ่ง จะโชว์การ์ดของเพจนั้นเพจเดียว (ไม่ใช่ตารางเปรียบเทียบ)
+// คำนวณจาก DATA.dailyByPage สดๆ ตาม currentSince/currentUntil ไม่ใช้ pagesSummary7d
+// ที่เป็นค่าคงที่ 7 วันอีกต่อไป
+function computePageStats(pageId, since, until) {
+  const rows = (DATA.dailyByPage?.[pageId] || []).filter(d => d.date >= since && d.date <= until);
+  const spend = rows.reduce((s, d) => s + d.spend, 0);
+  const impressions = rows.reduce((s, d) => s + d.impressions, 0);
+  const reachSum = rows.reduce((s, d) => s + d.reach, 0);
+  const clicks = rows.reduce((s, d) => s + d.clicks, 0);
+  const messages = rows.reduce((s, d) => s + (d.messages || 0), 0);
+  return {
+    spend, impressions, reachSum, clicks, messages,
+    cpc: clicks > 0 ? spend / clicks : 0,
+    ctr: impressions > 0 ? (clicks / impressions) * 100 : 0
+  };
+}
 function renderPagesRow() {
   const pagesRow = document.getElementById("pages-row");
-  if (!DATA.pagesSummary7d || DATA.pagesSummary7d.length === 0) return;
-  const rows = selectedPage === "all" ? DATA.pagesSummary7d : DATA.pagesSummary7d.filter(p => p.pageId === selectedPage);
+  const pageList = DATA.account.pages || [];
+  if (pageList.length === 0 || !currentSince || !currentUntil) return;
+  const targets = selectedPage === "all" ? pageList : pageList.filter(p => p.pageId === selectedPage);
   pagesRow.style.display = "grid";
-  pagesRow.classList.toggle("single", rows.length === 1);
-  pagesRow.innerHTML = rows.map(p => `
-    <div class="page-card">
-      <div class="page-card-head">
-        <h3>${p.pageName}</h3>
-        <span class="page-tag">${p.adsCount} โฆษณา</span>
+  pagesRow.classList.toggle("single", targets.length === 1);
+  pagesRow.innerHTML = targets.map(p => {
+    const s = computePageStats(p.pageId, currentSince, currentUntil);
+    const adsCount = DATA.ads.filter(a => a.pageId === p.pageId).length;
+    return `
+      <div class="page-card">
+        <div class="page-card-head">
+          <h3>${p.pageName}</h3>
+          <span class="page-tag">${adsCount} โฆษณา</span>
+        </div>
+        <div class="page-stat-grid">
+          <div class="page-stat">ค่าแอด<b>${fmtBaht(s.spend)}</b></div>
+          <div class="page-stat">Reach (รวม)<b>${fmtNum(s.reachSum)}</b></div>
+          <div class="page-stat">Clicks<b>${fmtNum(s.clicks)}</b></div>
+          <div class="page-stat">CPC<b>${fmtBaht(s.cpc)}</b></div>
+          <div class="page-stat">CTR<b>${s.ctr.toFixed(2)}%</b></div>
+          <div class="page-stat">แชท<b>${fmtNum(s.messages)}</b></div>
+        </div>
       </div>
-      <div class="page-stat-grid">
-        <div class="page-stat">ค่าแอด<b>${fmtBaht(p.spend)}</b></div>
-        <div class="page-stat">Reach (รวม)<b>${fmtNum(p.reachSum)}</b></div>
-        <div class="page-stat">Clicks<b>${fmtNum(p.clicks)}</b></div>
-        <div class="page-stat">CPC<b>${fmtBaht(p.cpc)}</b></div>
-        <div class="page-stat">CTR<b>${p.ctr.toFixed(2)}%</b></div>
-        <div class="page-stat">แชท<b>${fmtNum(p.messages)}</b></div>
-      </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
-renderPagesRow();
 
 // ---- โฆษณาเด่นประจำสัปดาห์ (Active + ใช้งบสูงสุด) ----
 function renderSpotlight() {
